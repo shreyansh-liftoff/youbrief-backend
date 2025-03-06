@@ -21,19 +21,31 @@ export const createAudioUrl = async (req: Request, res: Response) => {
       where: { id: id },
     });
     if (!existingVideo) {
+      console.error("No video found with this id");
       throw new Error("No video found with this id");
     }
     const summary = existingVideo?.summaries?.[language];
     if (!summary) {
+      console.error("No summary found with this language");
       throw new Error("No summary found with this language");
     }
+    console.info("Generating audio for", id);
     const audioFile = await generateAudioFromSummary(
       summary,
       existingVideo.id!,
       language as string
     );
+    if (!audioFile) {
+      console.error("No audio generated for this summary");
+      throw new Error("No audio generated for this summary");
+    }
     const vercelUrl = await uploadFileToVercel(audioFile);
+    if (!vercelUrl) {
+      console.error("No url generated for this audio");
+      throw new Error("No url generated for this audio");
+    }
     await redis.set(key, vercelUrl);
+    console.info("audio generated for", id);
     res.send({ url: vercelUrl });
   } catch (error: any) {
     res.status(400).json({ error: error.message });

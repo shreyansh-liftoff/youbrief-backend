@@ -17,15 +17,18 @@ export const generateSummary = async (req: Request, res: Response) => {
             res.send({ summary: cacheSummary });
             return;
         }
+        console.log('generating subtitles for', url);
         const subtitles = (await getVideoSubtitles(url));
         if (!subtitles) {
             throw new Error('No subtitles generated for this video');
         }
+        console.log('generating summary for', url);
         const summary = await generateSummaryFromSubtitles(subtitles, language);
         if (!summary) {
             throw new Error('No summary generated for this video');
         }
         await redis.set(key, summary);
+        console.log('summary generated for', url);
         res.json({ summary });
     } catch (error: any) {
         res.status(400).json({ error: error.message });
