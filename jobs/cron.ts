@@ -9,7 +9,7 @@ const apifyClient = new ApifyClient({
     token: APIFY_API_TOEKN
 });
 
-export async function GET() {
+export async function refereshTrendingVideos() {
     try {
         // Run the YouTube trending videos actor
         const run = await apifyClient.actor("matchiq/youtube-trending").call({
@@ -47,21 +47,8 @@ export async function GET() {
             JSON.stringify(successfulVideos.map(video => video.value.id))
         );
 
-        return new Response(JSON.stringify({
-            success: true,
-            message: `Processed ${createdVideos.length} trending videos`
-        }), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' }
-        });
+        console.log('Trending videos refreshed');
     } catch (error) {
         console.error('Error fetching trending videos:', error);
-        return new Response(JSON.stringify({
-            success: false,
-            error: 'Failed to fetch trending videos'
-        }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' }
-        });
     }
 }
