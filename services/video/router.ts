@@ -1,0 +1,17 @@
+import { Router } from "express";
+import { createVideoEntry } from "./handlers/post";
+import { getTrendingVideos, getVideoDetails, getVideos } from "./handlers/get";
+import { updateAudioUrl, updateVideoSummary } from "./handlers/put";
+
+const router = Router();
+
+router.post("/", async (req, res) => await createVideoEntry(req, res));
+router.get("/", async (req, res) => await getVideoDetails(req, res));
+router.put("/update-summary", async (req, res) => {
+  await updateVideoSummary(req, res);
+});
+router.put("/update-audio-url", async (req, res) => await updateAudioUrl(req, res));
+router.get("/all", async (req, res) => await getVideos(req, res));
+router.get("/trending-videos", async (req, res) => await getTrendingVideos(req, res));
+
+export default router;

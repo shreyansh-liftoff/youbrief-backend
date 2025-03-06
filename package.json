@@ -1,0 +1,37 @@
+{
+  "name": "video-summary-backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "nodemon",
+    "build-and-run": "npm run build && npx prisma migrate deploy && npx prisma generate dev && npm start"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.13.5",
+    "express": "^4.21.2",
+    "nodemon": "^3.1.9",
+    "prisma": "^6.4.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.4.1",
+    "@types/ioredis": "^4.28.10",
+    "@vercel/blob": "^0.27.2",
+    "apify-client": "^2.12.0",
+    "body-parser": "^1.20.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "ioredis": "^5.5.0",
+    "node-cron": "^3.0.3",
+    "openai": "^4.85.4",
+    "zod": "^3.24.2"
+  }
+}
