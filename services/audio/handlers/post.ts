@@ -48,6 +48,7 @@ export const createAudioUrl = async (req: Request, res: Response) => {
     console.info("audio generated for", id);
     res.send({ url: vercelUrl });
   } catch (error: any) {
+    console.error(error);
     res.status(400).json({ error: error.message });
   }
 };
