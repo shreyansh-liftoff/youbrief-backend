@@ -1,5 +1,7 @@
 import OpenAI from "openai";
 import { OPENAI_API_KEY } from "../../config/env";
+import { writeFile } from "fs/promises";
+import path from "path";
 
 const openai = new OpenAI({
   apiKey: OPENAI_API_KEY,
@@ -57,10 +59,15 @@ export const generateAudioFromSummary = async (
       .replace(/[^a-zA-Z0-9-]/g, "-")
       .toLowerCase();
 
-    const file = new File([finalAudio], `${sanitizedFileName}.mp3`, {
-      type: "audio/mpeg",
-    });
-    return file;
+    const filePath = path.join(process.cwd(), 'tmp', `${sanitizedFileName}.mp3`);
+    await writeFile(filePath, finalAudio);
+
+    return {
+      buffer: finalAudio,
+      fileName: `${sanitizedFileName}.mp3`,
+      filePath,
+      mimeType: 'audio/mpeg'
+    };
   } catch (error: any) {
     throw new Error(error);
   }

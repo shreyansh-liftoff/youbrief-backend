@@ -1,9 +1,9 @@
 import { PrismaClient } from "@prisma/client";
 import { Request, Response } from "express";
 import { generateAudioFromSummary } from "../../openai/openai";
-import { uploadFileToVercel } from "../../../utils/utils";
+import { ensureTmpDirectory, uploadFileToVercel } from "../../../utils/utils";
 import { GenerateSummaryInput } from "../schema/schema";
-import { CACHE_KEYS, redis } from "../../../redis/cofig";
+import { redis } from "../../../redis/cofig";
 
 const prisma = new PrismaClient();
 
@@ -30,6 +30,7 @@ export const createAudioUrl = async (req: Request, res: Response) => {
       throw new Error("No summary found with this language");
     }
     console.info("Generating audio for", id);
+    await ensureTmpDirectory();
     const audioFile = await generateAudioFromSummary(
       summary,
       existingVideo.id!,

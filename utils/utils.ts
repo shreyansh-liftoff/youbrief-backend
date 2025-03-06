@@ -1,5 +1,8 @@
 import { put } from "@vercel/blob";
 import { BLOB_READ_WRITE_TOKEN } from "../config/env";
+import { Readable } from "stream";
+import path from "path";
+import { mkdir } from "fs/promises";
 
 export const supportedLanguages = [
   { code: "af", name: "Afrikaans" },
@@ -65,11 +68,18 @@ export const getAudioFilePath = (videoId: string, language: string) => {
   return `audio/${videoId}/${language}.mp3`;
 };
 
-export const uploadFileToVercel = async(file: File) => {
+interface AudioFile {
+  buffer: Buffer;
+  fileName: string;
+  mimeType: string;
+}
+
+export const uploadFileToVercel = async(audioFile: AudioFile) => {
   try {
+    const stream = Readable.from(audioFile.buffer);
     const blobKey = BLOB_READ_WRITE_TOKEN;
     const outputDir = "audios";
-    const blob = await put(`${outputDir}/${file.name}`, file, {
+    const blob = await put(`${outputDir}/${audioFile.fileName}`, stream, {
       access: "public",
       token: blobKey,
     });
@@ -77,5 +87,16 @@ export const uploadFileToVercel = async(file: File) => {
     return url;
   } catch (error: any) {
     throw new Error(error);
+  }
+}
+
+export async function ensureTmpDirectory() {
+  const tmpDir = path.join(process.cwd(), 'tmp');
+  try {
+    await mkdir(tmpDir, { recursive: true });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
+      throw error;
+    }
   }
 }
