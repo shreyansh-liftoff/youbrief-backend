@@ -9,18 +9,14 @@ const apifyClient = new ApifyClient({
     token: APIFY_API_TOEKN
 });
 
-export async function refereshTrendingVideos() {
+export async function GET() {
     try {
-        console.log('running trending videos job');
-        const input = {
-            "type": "n",
-            "gl": "in",
-            "hl": "en",
-            "maxItems": 20,
-            "customMapFunction": (object: any) => { return {...object} }
-        };
         // Run the YouTube trending videos actor
-        const run = await apifyClient.actor("jnHyoAspdnYdE42rn").call(input);
+        const run = await apifyClient.actor("matchiq/youtube-trending").call({
+            maxItems: 20,
+            country: "IN",
+            startUrls: [{ url: "https://www.youtube.com/feed/trending" }]
+        });
 
         const { items } = await apifyClient.dataset(run.defaultDatasetId).listItems();
         
@@ -51,8 +47,21 @@ export async function refereshTrendingVideos() {
             JSON.stringify(successfulVideos.map(video => video.value.id))
         );
 
-        console.log('Trending videos refreshed');
+        return new Response(JSON.stringify({
+            success: true,
+            message: `Processed ${createdVideos.length} trending videos`
+        }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' }
+        });
     } catch (error) {
         console.error('Error fetching trending videos:', error);
+        return new Response(JSON.stringify({
+            success: false,
+            error: 'Failed to fetch trending videos'
+        }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+        });
     }
 }
