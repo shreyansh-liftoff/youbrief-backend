@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { GetAllVideosInput } from "../schema/schema";
 import { redis, CACHE_KEYS } from "../../../redis/cofig";
+import { refereshTrendingVideos } from "../../../jobs/cron";
 
 const primsaClient = new PrismaClient();
 
@@ -46,10 +47,12 @@ export const getTrendingVideos = async (req: Request, res: Response) => {
     const trendingIds = await redis.get(CACHE_KEYS.TRENDING_VIDEOS);
 
     if (!trendingIds) {
-      throw new Error("No trending videos found");
+      await refereshTrendingVideos();
     }
 
-    const videoIds = JSON.parse(trendingIds);
+    console.log("Fetching trending videos from DB", trendingIds);
+
+    const videoIds = trendingIds ? JSON.parse(trendingIds) : [];
 
     const trendingVideos = await primsaClient.video.findMany({
       where: {
