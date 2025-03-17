@@ -32,7 +32,6 @@ export async function GET() {
                         title: video.title,
                         description: video.text,
                         thumbnail: video.thumbnailUrl,
-                        duration: video.duration
                     }
                 });
             })

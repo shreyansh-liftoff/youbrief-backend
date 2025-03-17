@@ -10,30 +10,35 @@ const prisma = new PrismaClient();
 export const createAudioUrl = async (req: Request, res: Response) => {
   try {
     const { id, language } = GenerateSummaryInput.parse(req.query);
-    const key = `${id}-${language}`;
+    const key = `${id}-${language}-audio`;
     const cacheVercelUrl = await redis.get(key);
 
     if (cacheVercelUrl) {
       res.send({ url: cacheVercelUrl });
       return;
     }
-    const existingVideo: any = await prisma.video.findUnique({
-      where: { id: id },
+    const existingAudio: any = await prisma.audioUrl.findMany({
+      where: { videoId: id, language: language },
     });
-    if (!existingVideo) {
-      console.error("No video found with this id");
-      throw new Error("No video found with this id");
+    if (existingAudio.length) {
+      await redis.set(key, existingAudio[0].url);
+      res.send({ url: existingAudio[0].url });
+      return;
     }
-    const summary = existingVideo?.summaries?.[language];
-    if (!summary) {
+
+    const summaries = await prisma.summary.findMany({
+      where: { videoId: id, language: language },
+    });
+    if (!summaries.length) {
       console.error("No summary found with this language");
       throw new Error("No summary found with this language");
     }
+    const summary = summaries[0];
     console.info("Generating audio for", id);
     await ensureTmpDirectory();
     const audioFile = await generateAudioFromSummary(
-      summary,
-      existingVideo.id!,
+      summary.text,
+      existingAudio.id!,
       language as string
     );
     if (!audioFile) {
@@ -45,7 +50,15 @@ export const createAudioUrl = async (req: Request, res: Response) => {
       console.error("No url generated for this audio");
       throw new Error("No url generated for this audio");
     }
-    await redis.set(key, vercelUrl);
+
+    await prisma.audioUrl.create({
+      data: {
+        videoId: id,
+        language: language,
+        url: vercelUrl,
+      },
+    });
+    await redis.setex(key, 3600, vercelUrl);
     console.info("audio generated for", id);
     res.send({ url: vercelUrl });
   } catch (error: any) {

@@ -1,7 +1,7 @@
 import { PrismaClient } from "@prisma/client";
-import { getVideoDetails } from "../../apify/apify";
 import { CreateVideoInput } from "../schema/schema";
 import { Request, Response } from "express";
+import { getVideoDetails } from "../../youtube/youtube";
 
 const primsaClient = new PrismaClient();
 
@@ -16,7 +16,6 @@ export const createVideoEntry = async (req: Request, res: Response) => {
         title: videoData.title,
         description: videoData.text,
         thumbnail: videoData.thumbnailUrl,
-        duration: videoData.duration
       },
     });
     res.status(201).send(video);

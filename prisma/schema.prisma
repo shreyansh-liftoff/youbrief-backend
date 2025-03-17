@@ -9,24 +9,46 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
 model Video {
-  id             String   @id @default(cuid())
-  title          String
-  description    String
-  url            String   @unique
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  plays          Int      @default(0)
-  duration       String   @default("")
-  thumbnail      String   @default("")
-  summaries      Json?
-  audioUrls      Json?
-  audioDurations Json?
+  id          String     @id @default(cuid())
+  title       String
+  description String
+  url         String     @unique
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  plays       Int        @default(0)
+  thumbnail   String     @default("")
 
   @@index([url])
+}
+
+model Summary {
+  id        String   @id @default(cuid())
+  videoId   String
+  text      String
+  language  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([videoId, language])
+  @@index([videoId])
+  @@index([language])
+}
+
+model AudioUrl {
+  id        String   @id @default(cuid())
+  videoId   String
+  url       String
+  language  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([videoId, language])
+  @@index([videoId])
+  @@index([language])
 }

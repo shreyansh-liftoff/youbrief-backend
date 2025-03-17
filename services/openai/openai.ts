@@ -7,12 +7,9 @@ const openai = new OpenAI({
   apiKey: OPENAI_API_KEY,
 });
 
-export const generateSummaryFromSubtitles = async (
-  subtitles: string,
-  language: string
-) => {
+export async function* generateSummaryStream(subtitles: string, language: string) {
   try {
-    const summaryResponse = await openai.chat.completions.create({
+    const stream = await openai.chat.completions.create({
       model: "gpt-4-turbo",
       messages: [
         {
@@ -21,13 +18,19 @@ export const generateSummaryFromSubtitles = async (
         },
         { role: "user", content: subtitles },
       ],
+      stream: true,
     });
-    const summary = summaryResponse.choices[0].message.content;
-    return summary;
+
+    for await (const chunk of stream) {
+      const content = chunk.choices[0]?.delta?.content || "";
+      if (content) {
+        yield content; // Yield each chunk as it arrives
+      }
+    }
   } catch (error: any) {
     throw new Error(error);
   }
-};
+}
 
 export const generateAudioFromSummary = async (
   summary: string,

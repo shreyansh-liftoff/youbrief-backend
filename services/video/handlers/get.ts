@@ -46,6 +46,8 @@ export const getTrendingVideos = async (req: Request, res: Response) => {
     // Get trending video IDs from Redis
     const trendingIds = await redis.get(CACHE_KEYS.TRENDING_VIDEOS);
 
+    console.log("Trending videos from Redis", trendingIds);
+
     if (!trendingIds) {
       await refereshTrendingVideos();
     }
