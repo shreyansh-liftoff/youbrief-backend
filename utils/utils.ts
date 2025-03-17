@@ -100,3 +100,9 @@ export async function ensureTmpDirectory() {
     }
   }
 }
+
+export const normalizeYouTubeUrl = (url: string): string | null => {
+  const regex = /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/ ]{11})/;
+  const match = url.match(regex);
+  return match ? `https://www.youtube.com/watch?v=${match[1]}` : null;
+};
