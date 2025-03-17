@@ -51,7 +51,7 @@ export const createAudioUrl = async (req: Request, res: Response) => {
       throw new Error("No url generated for this audio");
     }
 
-    await prisma.audioUrl.create({
+    const data = await prisma.audioUrl.create({
       data: {
         videoId: id,
         language: language,
@@ -60,7 +60,7 @@ export const createAudioUrl = async (req: Request, res: Response) => {
     });
     await redis.setex(key, 3600, vercelUrl);
     console.info("audio generated for", id);
-    res.send({ url: vercelUrl });
+    res.send(data);
   } catch (error: any) {
     console.error(error);
     res.status(400).json({ error: error.message });

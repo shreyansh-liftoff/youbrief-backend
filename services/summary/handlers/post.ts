@@ -52,11 +52,12 @@ export const generateSummary = async (req: Request, res: Response) => {
     res.end(); // Close stream
 
     // Save summary to DB and cache after streaming is complete
-    await prisma.summary.create({
+    const data = await prisma.summary.create({
       data: { videoId: id, text: summaryText, language: language },
     });
     await redis.setex(key, 3600, summaryText);
     console.log("Summary stored for", id);
+    res.send(data);
   } catch (error: any) {
     res.status(400).json({ error: error.message });
   }
