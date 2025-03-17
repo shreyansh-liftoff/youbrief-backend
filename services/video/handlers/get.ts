@@ -9,6 +9,10 @@ const primsaClient = new PrismaClient();
 export const getVideoDetails = async (req: Request, res: Response) => {
   try {
     const { url } = req.query;
+    if (!url) {
+      throw new Error("URL is required");
+    }
+    console.log("Fetching video details for", url);
     const videoData = await primsaClient.video.findUnique({
       where: {
         url: url as string,
@@ -17,6 +21,7 @@ export const getVideoDetails = async (req: Request, res: Response) => {
     if (!videoData) {
       throw new Error("No video found with this url");
     }
+    console.log("Video details", videoData);
     res.json(videoData);
   } catch (error: any) {
     res.status(400).json({ error: error.message });

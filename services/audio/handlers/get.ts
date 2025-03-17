@@ -18,6 +18,6 @@ export const getAudio = async (req: Request, res: Response) => {
     }
     res.send(audio);
   } catch (error: any) {
-    res.status(500).send(error.message);
+    res.status(500).send({error: error.message});
   }
 };

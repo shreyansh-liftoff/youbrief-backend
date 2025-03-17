@@ -8,7 +8,12 @@ const primsaClient = new PrismaClient();
 export const createVideoEntry = async (req: Request, res: Response) => {
   try {
     const { url } = CreateVideoInput.parse(req.query);
-    const videoData = await getVideoDetails(url);
+    console.log("Creating video entry for", url);
+    const id = url.split("v=")[1];
+    const videoData = await getVideoDetails(id);
+    if (!videoData) {
+      throw new Error("No video found with this url");
+    }
     const video = await primsaClient.video.create({
       data: {
         id: videoData.id,
@@ -18,8 +23,9 @@ export const createVideoEntry = async (req: Request, res: Response) => {
         thumbnail: videoData.thumbnailUrl,
       },
     });
+    console.log("Video created", url);
     res.status(201).send(video);
   } catch (error: any) {
-    res.status(500).send(error.message);
+    res.status(500).send({error: error.message});
   }
 };
