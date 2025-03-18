@@ -104,11 +104,13 @@ export async function ensureTmpDirectory() {
 // url format can be -
 // https://youtu.be/zPyg4N7bcHM?si=0403Bo2XJApkzawn
 // https://www.youtube.com/watch?v=zPyg4N7bcHM
+// it should return zPyg4N7bcHM in both cases
 
 export const getIdFromUrl = (url: string): string | null => {
-  const id = url.split("v=")[1];
-  if (!id) {
-    return url.split("be/")[1];
+  const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)\/(?:watch\?v=)?([a-zA-Z0-9_-]+)/;
+  const match = url.match(regex);
+  if (match) {
+    return match[1];
   }
-  return id;
+  return null;
 };

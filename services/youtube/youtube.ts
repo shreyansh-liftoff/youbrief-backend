@@ -9,6 +9,7 @@ import {
 } from "../../config/env";
 import { VideoDTO } from "./schema";
 import { YoutubeTranscript } from "youtube-transcript";
+import nodeFetch from "node-fetch";
 
 const youtubeClient = axios.create({
   baseURL: YOUTUBE_BASE_URL,
@@ -110,6 +111,9 @@ const fetchCaptionText = async (captionId: string) => {
 
 export const getVideoSubtitles = async (videoId: string) => {
   try {
+    if (!global.fetch) {
+      (global as any).fetch = nodeFetch;
+    }
     // Step 1: Get available captions
     const result = await YoutubeTranscript.fetchTranscript(videoId);
     if (result) {
@@ -117,21 +121,6 @@ export const getVideoSubtitles = async (videoId: string) => {
         return captions.join(" ");
     }
     throw new Error("No captions available for this video");
-    const captions = await fetchCaptions(videoId);
-    if (!captions.length) {
-      console.log("⚠️ No captions available for this video.");
-      return;
-    }
-
-    // Step 2: Get the first caption track (assuming default language)
-    const captionId = captions[0].id;
-
-    // Step 3: Fetch caption text
-    const subtitleText = await fetchCaptionText(captionId);
-
-    // Step 4: Store subtitle text
-    console.log("\n📄 Subtitle Content:\n", subtitleText);
-    return subtitleText;
   } catch (error: any) {
     console.error("❌ Error getting subtitles:", error.message);
   }
