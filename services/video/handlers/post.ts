@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { CreateVideoInput } from "../schema/schema";
 import { Request, Response } from "express";
 import { getVideoDetails } from "../../youtube/youtube";
-import { normalizeYouTubeUrl } from "../../../utils/utils";
+import { getIdFromUrl } from "../../../utils/utils";
 
 const primsaClient = new PrismaClient();
 
@@ -10,7 +10,7 @@ export const createVideoEntry = async (req: Request, res: Response) => {
   try {
     const { url } = CreateVideoInput.parse(req.query);
     console.log("Creating video entry for", url);
-    const id = normalizeYouTubeUrl(url)!.split("v=")[1];
+    const id = getIdFromUrl(url)!;
     const videoData = await getVideoDetails(id);
     if (!videoData) {
       throw new Error("No video found with this url");

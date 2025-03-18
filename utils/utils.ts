@@ -101,8 +101,14 @@ export async function ensureTmpDirectory() {
   }
 }
 
-export const normalizeYouTubeUrl = (url: string): string | null => {
-  const regex = /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/ ]{11})/;
-  const match = url.match(regex);
-  return match ? `https://www.youtube.com/watch?v=${match[1]}` : null;
+// url format can be -
+// https://youtu.be/zPyg4N7bcHM?si=0403Bo2XJApkzawn
+// https://www.youtube.com/watch?v=zPyg4N7bcHM
+
+export const getIdFromUrl = (url: string): string | null => {
+  const id = url.split("v=")[1];
+  if (!id) {
+    return url.split("be/")[1];
+  }
+  return id;
 };
