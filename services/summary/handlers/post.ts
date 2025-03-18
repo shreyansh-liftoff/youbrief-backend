@@ -3,7 +3,7 @@ import { generateSummaryStream } from "../../openai/openai";
 import { GenerateSummaryInput } from "../schema/schema";
 import { Request, Response } from "express";
 import { redis } from "../../../redis/cofig";
-import { getVideoSubtitles } from "../../youtube/youtube";
+import { getVideoSubtitles } from "../../apify/apify";
 
 const prisma = new PrismaClient();
 

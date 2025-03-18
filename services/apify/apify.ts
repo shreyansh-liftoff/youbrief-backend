@@ -26,10 +26,10 @@ export const getVideoDetails = async (url: string) => {
   }
 };
 
-export const getVideoSubtitles = async (url: string) => {
+export const getVideoSubtitles = async (videoId: string) => {
   try {
     const input = {
-      startUrls: [{ url: url }], // Fix the format for startUrls
+      startUrls: [{ url: `https://www.youtube.com/watch?v=${videoId}` }], // Fix the format for startUrls
       maxDepth: 1,
       subtitlesLanguage: 'en', // Change to 'en' or any other language needed
       subtitlesFormat: "plaintext",
