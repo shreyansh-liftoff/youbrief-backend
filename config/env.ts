@@ -14,3 +14,5 @@ export const OAUTH_CLIENT_SECRET = process.env.OAUTH_CLIENT_SECRET;
 export const REFERESH_TOKEN = process.env.REFERESH_TOKEN;
 export const OAUTH_BASE_URL = process.env.OAUTH_BASE_URL;
 export const OAUTH_AUTHORIZATION_CODE = process.env.OAUTH_AUTHORIZATION_CODE;
+export const VIMEO_ACCESS_TOKEN = process.env.VIMEO_ACCESS_TOKEN;
+export const VIMEO_BASE_URL = process.env.VIMEO_BASE_URL;
