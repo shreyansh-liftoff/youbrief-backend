@@ -1,11 +1,11 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
-import { GetAllVideosInput } from "../schema/schema";
+import { GetAllVideosInput, GetPopularVideosInput } from "../schema/schema";
 import { redis, CACHE_KEYS } from "../../../redis/cofig";
 import { refereshTrendingVideos } from "../../../jobs/cron";
 import { getVideosByCategoryId } from "../../youtube/youtube";
 
-const primsaClient = new PrismaClient();
+const prismaClient = new PrismaClient();
 
 export const getVideoDetails = async (req: Request, res: Response) => {
   try {
@@ -14,7 +14,7 @@ export const getVideoDetails = async (req: Request, res: Response) => {
       throw new Error("URL is required");
     }
     console.log("Fetching video details for", url);
-    const videoData = await primsaClient.video.findUnique({
+    const videoData = await prismaClient.video.findUnique({
       where: {
         url: url as string,
       },
@@ -34,7 +34,7 @@ export const getVideos = async (req: Request, res: Response) => {
     const { offset, limit, order, orderBy } = GetAllVideosInput.parse(
       req.query
     );
-    const videos = await primsaClient.video.findMany({
+    const videos = await prismaClient.video.findMany({
       skip: offset,
       take: limit,
       orderBy: {
@@ -71,7 +71,7 @@ export const getTrendingVideos = async (req: Request, res: Response) => {
       videoIds = freshIdsString ? JSON.parse(freshIdsString) : [];
     }
 
-    const trendingVideos = await primsaClient.video.findMany({
+    const trendingVideos = await prismaClient.video.findMany({
       where: {
         id: {
           in: videoIds,
@@ -90,57 +90,66 @@ export const getTrendingVideos = async (req: Request, res: Response) => {
   }
 };
 
-export const getPopularVideosByCategory = async (
-  req: Request,
-  res: Response
-) => {
+export const getPopularVideosByCategory = async (req: Request, res: Response) => {
   try {
-    const { categoryId } = req.params;
+    const { categoryId } = GetPopularVideosInput.parse(req.query);
+    const key = `${CACHE_KEYS.POPULAR_VIDEOS}-${categoryId}`;
+
     if (!categoryId) {
-      throw new Error("Category ID is required");
+      res.status(400).json({ error: "Category ID is required" });
+      return;
     }
+
+    // Check Redis cache first
+    const cachedVideos = await redis.get(key);
+    if (cachedVideos) {
+      console.log("Fetching popular videos from Redis");
+      const videos = JSON.parse(cachedVideos);
+      res.json({ videos, total: videos.length });
+      return;
+    }
+
     console.log("Fetching popular videos for category ID:", categoryId);
     const rawVideos = await getVideosByCategoryId(categoryId);
 
     if (!rawVideos || rawVideos.length === 0) {
-      throw new Error("No videos found for this category");
+      res.status(404).json({ error: "No videos found for this category" });
+      return;
     }
+
     console.log("Fetched popular videos:", rawVideos);
 
-    const promises = rawVideos.map(async (video: any) => {
-      const existingVideo = await primsaClient.video.upsert({
-        where: {
-          id: video.id,
-        },
-        update: {
-          ...video,
-        },
-        create: {
-          ...video,
-        },
-      });
+    // Bulk Upsert: Avoids unnecessary multiple DB calls
+    const videoData = rawVideos.map((video: any) => ({
+      id: video.id,
+      title: video.title,
+      description: video.text,
+      url: video.url,
+      thumbnail: video.thumbnailUrl,
+    }));
 
-      if (!existingVideo) {
-        await primsaClient.video.create({
-          data: {
-            ...video,
-          },
-        });
-      }
-    });
-    await Promise.allSettled(promises);
-    const videos = await primsaClient.video.findMany({
+    await prismaClient.$transaction(
+      videoData.map((video: any) =>
+        prismaClient.video.upsert({
+          where: { id: video.id },
+          update: video,
+          create: video,
+        })
+      )
+    );
+
+    const videos = await prismaClient.video.findMany({
       where: {
-        id: {
-          in: rawVideos.map((video: any) => video.id),
-        },
+        id: { in: rawVideos.map((video: any) => video.id) },
       },
     });
-    res.json({
-      videos,
-      total: videos.length,
-    });
+
+    // Cache the videos in Redis
+    await redis.set(key, JSON.stringify(videos), "EX", 60 * 60 * 24); // Cache for 24 hours
+
+    res.json({ videos, total: videos.length });
   } catch (error: any) {
-    res.status(400).json({ error: error.message });
+    console.error("Error fetching popular videos:", error);
+    res.status(500).json({ error: error.message });
   }
 };

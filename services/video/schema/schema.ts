@@ -21,3 +21,7 @@ export const GetAllVideosInput = z.object({
     orderBy: z.enum(["createdAt", "updatedAt", "title"]).default("createdAt").optional(),
     order: z.enum(["asc", "desc"]).default("desc").optional(),
 });
+
+export const GetPopularVideosInput = z.object({
+    categoryId: z.string().min(1, "Category ID is required"),
+});

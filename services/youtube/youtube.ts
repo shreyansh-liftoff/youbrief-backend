@@ -79,7 +79,7 @@ export const getVideosByCategoryId = async (categoryId: string) => {
       id: item.id,
       url: `https://www.youtube.com/watch?v=${item.id}`,
       title: item.snippet.title,
-      text: item.snippet.description,
+      text: item.snippet.description || "",
       thumbnailUrl:
         item.snippet.thumbnails.standard?.url ||
         item.snippet.thumbnails.default.url,

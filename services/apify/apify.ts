@@ -59,6 +59,7 @@ export const getVideoSubtitles = async (videoId: string) => {
     await redis.set(key, JSON.stringify(subtitles));
     return subtitles;
   } catch (error: any) {
+    console.error("Error fetching subtitles:", error);
     throw new Error(error);
   }
 };
