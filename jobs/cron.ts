@@ -36,8 +36,8 @@ export async function refereshTrendingVideos() {
                         id: video.id,
                         url: video.url,
                         title: video.title,
-                        description: video.text,
-                        thumbnail: video.thumbnailUrl,
+                        description: video.description ?? '',
+                        thumbnail: video.thumbnails?.standard?.url || video.thumbnails?.default?.url,
                     }
                 });
             })

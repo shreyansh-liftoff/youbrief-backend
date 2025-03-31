@@ -63,65 +63,30 @@ export const getVideoDetails = async (id: string) => {
   }
 };
 
-const fetchCaptions = async (videoId: string) => {
+export const getVideosByCategoryId = async (categoryId: string) => {
   try {
-    const accessToken = await refreshAccessToken();
-
-    const response = await axios.get(`${YOUTUBE_BASE_URL}captions`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
+    const response = await youtubeClient.get("/videos", {
       params: {
         part: "snippet",
-        videoId: videoId,
+        chart: "mostPopular",
+        videoCategoryId: categoryId,
+        maxResults: 20,
+        regionCode: "IN",
       },
     });
 
-    console.log("✅ Captions Retrieved", response.data.items);
-    return response.data.items; // Returns available caption tracks
+    const parsedResponse = response.data.items.map((item: any) => ({
+      id: item.id,
+      url: `https://www.youtube.com/watch?v=${item.id}`,
+      title: item.snippet.title,
+      text: item.snippet.description,
+      thumbnailUrl:
+        item.snippet.thumbnails.standard?.url ||
+        item.snippet.thumbnails.default.url,
+    }));
+
+    return parsedResponse;
   } catch (error: any) {
-    console.error(
-      "❌ Error fetching captions:",
-      error.response?.data || error.message
-    );
-    throw error;
+    throw new Error(error);
   }
-};
-
-const fetchCaptionText = async (captionId: string) => {
-  try {
-    const accessToken = await refreshAccessToken();
-
-    const response = await axios.get(
-      `${YOUTUBE_BASE_URL}captions/${captionId}`,
-      {
-        headers: { Authorization: `Bearer ${accessToken}` },
-        params: { tfmt: "srt" }, // Get captions in SRT format
-      }
-    );
-
-    console.log("✅ Caption Text Fetched");
-    return response.data; // Subtitle content
-  } catch (error: any) {
-    console.error(
-      "❌ Error fetching caption text:",
-      error.response?.data || error.message
-    );
-    throw error;
-  }
-};
-
-export const getVideoSubtitles = async (videoId: string) => {
-  try {
-    if (!global.fetch) {
-      (global as any).fetch = nodeFetch;
-    }
-    // Step 1: Get available captions
-    const result = await YoutubeTranscript.fetchTranscript(videoId);
-    if (result) {
-        const captions = result.map((caption) => caption.text);
-        return captions.join(" ");
-    }
-    throw new Error("No captions available for this video");
-  } catch (error: any) {
-    console.error("❌ Error getting subtitles:", error.message);
-  }
-};
+}

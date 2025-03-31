@@ -3,6 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import { GetAllVideosInput } from "../schema/schema";
 import { redis, CACHE_KEYS } from "../../../redis/cofig";
 import { refereshTrendingVideos } from "../../../jobs/cron";
+import { getVideosByCategoryId } from "../../youtube/youtube";
 
 const primsaClient = new PrismaClient();
 
@@ -49,17 +50,26 @@ export const getVideos = async (req: Request, res: Response) => {
 export const getTrendingVideos = async (req: Request, res: Response) => {
   try {
     // Get trending video IDs from Redis
-    const trendingIds = await redis.get(CACHE_KEYS.TRENDING_VIDEOS);
+    console.log("Trending videos from Redis");
+    const trendingIdsString = await redis.get(CACHE_KEYS.TRENDING_VIDEOS);
 
-    console.log("Trending videos from Redis", trendingIds);
+    let videoIds: string[] = [];
 
-    if (!trendingIds) {
-      await refereshTrendingVideos();
+    if (trendingIdsString) {
+      try {
+        videoIds = JSON.parse(trendingIdsString);
+      } catch (parseError) {
+        console.error("Failed to parse trending IDs:", parseError);
+      }
     }
 
-    console.log("Fetching trending videos from DB", trendingIds);
-
-    const videoIds = trendingIds ? JSON.parse(trendingIds) : [];
+    if (!videoIds.length) {
+      console.log("No trending videos found, refreshing...");
+      await refereshTrendingVideos();
+      // Get fresh IDs after refresh
+      const freshIdsString = await redis.get(CACHE_KEYS.TRENDING_VIDEOS);
+      videoIds = freshIdsString ? JSON.parse(freshIdsString) : [];
+    }
 
     const trendingVideos = await primsaClient.video.findMany({
       where: {
@@ -74,6 +84,61 @@ export const getTrendingVideos = async (req: Request, res: Response) => {
     res.json({
       videos: trendingVideos,
       total: trendingVideos.length,
+    });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+export const getPopularVideosByCategory = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { categoryId } = req.params;
+    if (!categoryId) {
+      throw new Error("Category ID is required");
+    }
+    console.log("Fetching popular videos for category ID:", categoryId);
+    const rawVideos = await getVideosByCategoryId(categoryId);
+
+    if (!rawVideos || rawVideos.length === 0) {
+      throw new Error("No videos found for this category");
+    }
+    console.log("Fetched popular videos:", rawVideos);
+
+    const promises = rawVideos.map(async (video: any) => {
+      const existingVideo = await primsaClient.video.upsert({
+        where: {
+          id: video.id,
+        },
+        update: {
+          ...video,
+        },
+        create: {
+          ...video,
+        },
+      });
+
+      if (!existingVideo) {
+        await primsaClient.video.create({
+          data: {
+            ...video,
+          },
+        });
+      }
+    });
+    await Promise.allSettled(promises);
+    const videos = await primsaClient.video.findMany({
+      where: {
+        id: {
+          in: rawVideos.map((video: any) => video.id),
+        },
+      },
+    });
+    res.json({
+      videos,
+      total: videos.length,
     });
   } catch (error: any) {
     res.status(400).json({ error: error.message });
