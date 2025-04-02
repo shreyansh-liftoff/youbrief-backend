@@ -23,8 +23,6 @@ export async function refereshTrendingVideos() {
         const run = await apifyClient.actor("jnHyoAspdnYdE42rn").call(input);
 
         const { items } = await apifyClient.dataset(run.defaultDatasetId).listItems();
-
-        console.log('items', items);
         
         // Process each trending video
         const createdVideos = await Promise.allSettled(
@@ -37,13 +35,11 @@ export async function refereshTrendingVideos() {
                         url: video.url,
                         title: video.title,
                         description: video.description ?? '',
-                        thumbnail: video.thumbnails?.standard?.url || video.thumbnails?.default?.url,
+                        thumbnail: video.thumbnails?.[0]?.url
                     }
                 });
             })
         );
-
-        console.log('createdVideos', createdVideos);
 
         const successfulVideos = createdVideos.filter(video => video.status === 'fulfilled');
 
