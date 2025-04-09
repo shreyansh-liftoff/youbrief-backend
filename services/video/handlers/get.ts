@@ -4,6 +4,7 @@ import { GetAllVideosInput, GetPopularVideosInput } from "../schema/schema";
 import { redis, CACHE_KEYS } from "../../../redis/cofig";
 import { refereshTrendingVideos } from "../../../jobs/cron";
 import { getVideosByCategoryId } from "../../youtube/youtube";
+import { incrementPlayCount } from "../playCount";
 
 const prismaClient = new PrismaClient();
 
@@ -13,7 +14,6 @@ export const getVideoDetails = async (req: Request, res: Response) => {
     if (!url) {
       throw new Error("URL is required");
     }
-    console.log("Fetching video details for", url);
     const videoData = await prismaClient.video.findUnique({
       where: {
         url: url as string,
@@ -22,7 +22,7 @@ export const getVideoDetails = async (req: Request, res: Response) => {
     if (!videoData) {
       throw new Error("No video found with this url");
     }
-    console.log("Video details", videoData);
+    incrementPlayCount(videoData.id).catch(console.error);
     res.json(videoData);
   } catch (error: any) {
     res.status(400).json({ error: error.message });
@@ -41,6 +41,8 @@ export const getVideos = async (req: Request, res: Response) => {
         [orderBy as string]: order,
       },
     });
+    // Increment play counts asynchronously
+    incrementPlayCount(videos.map(v => v.id)).catch(console.error);
     res.json(videos);
   } catch (error: any) {
     res.status(400).json({ error: error.message });
@@ -81,6 +83,8 @@ export const getTrendingVideos = async (req: Request, res: Response) => {
         createdAt: "desc",
       },
     });
+    // Increment play counts asynchronously
+    incrementPlayCount(trendingVideos.map(v => v.id)).catch(console.error);
     res.json({
       videos: trendingVideos,
       total: trendingVideos.length,

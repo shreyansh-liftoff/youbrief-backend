@@ -1,8 +1,13 @@
 import { put } from "@vercel/blob";
-import { BLOB_READ_WRITE_TOKEN } from "../config/env";
+import {
+  BLOB_READ_WRITE_TOKEN,
+  SUPABASE_ANON_KEY,
+  SUPABASE_URL,
+} from "../config/env";
 import { Readable } from "stream";
 import path from "path";
 import { mkdir } from "fs/promises";
+import { createClient } from "@supabase/supabase-js";
 
 export const supportedLanguages = [
   { code: "af", name: "Afrikaans" },
@@ -74,28 +79,45 @@ interface AudioFile {
   mimeType: string;
 }
 
-export const uploadFileToVercel = async(audioFile: AudioFile) => {
+const supabase = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!);
+
+export const uploadFile = async (audioFile: AudioFile) => {
   try {
-    const stream = Readable.from(audioFile.buffer);
-    const blobKey = BLOB_READ_WRITE_TOKEN;
-    const outputDir = "audios";
-    const blob = await put(`${outputDir}/${audioFile.fileName}`, stream, {
-      access: "public",
-      token: blobKey,
-    });
-    const url = blob.url;
-    return url;
+    const { data, error } = await supabase.storage
+      .from("audios")
+      .upload(audioFile.fileName, audioFile.buffer, {
+        contentType: audioFile.mimeType,
+        cacheControl: "3600",
+        upsert: true,
+      });
+
+    if (error) {
+      console.error("Error uploading to Supabase:", error);
+      throw error;
+    }
+
+    if (!data) {
+      throw new Error("Upload failed - no data returned");
+    }
+
+    // Get public URL for the uploaded file
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from("audios").getPublicUrl(audioFile.fileName);
+
+    return publicUrl;
   } catch (error: any) {
-    throw new Error(error);
+    console.error("Upload failed:", error);
+    throw new Error(`Failed to upload file: ${error.message}`);
   }
-}
+};
 
 export async function ensureTmpDirectory() {
-  const tmpDir = path.join(process.cwd(), 'tmp');
+  const tmpDir = path.join(process.cwd(), "tmp");
   try {
     await mkdir(tmpDir, { recursive: true });
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
+    if ((error as NodeJS.ErrnoException).code !== "EEXIST") {
       throw error;
     }
   }
@@ -107,7 +129,8 @@ export async function ensureTmpDirectory() {
 // it should return zPyg4N7bcHM in both cases
 
 export const getIdFromUrl = (url: string): string | null => {
-  const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)\/(?:watch\?v=)?([a-zA-Z0-9_-]+)/;
+  const regex =
+    /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)\/(?:watch\?v=)?([a-zA-Z0-9_-]+)/;
   const match = url.match(regex);
   if (match) {
     return match[1];

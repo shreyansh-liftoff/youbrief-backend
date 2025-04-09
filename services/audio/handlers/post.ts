@@ -1,7 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { Request, Response } from "express";
 import { generateAudioFromSummary } from "../../openai/openai";
-import { ensureTmpDirectory, uploadFileToVercel } from "../../../utils/utils";
+import { ensureTmpDirectory, uploadFile } from "../../../utils/utils";
 import { GenerateSummaryInput } from "../schema/schema";
 import { redis } from "../../../redis/cofig";
 
@@ -45,7 +45,7 @@ export const createAudioUrl = async (req: Request, res: Response) => {
       console.error("No audio generated for this summary");
       throw new Error("No audio generated for this summary");
     }
-    const vercelUrl = await uploadFileToVercel(audioFile);
+    const vercelUrl = await uploadFile(audioFile);
     if (!vercelUrl) {
       console.error("No url generated for this audio");
       throw new Error("No url generated for this audio");

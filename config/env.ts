@@ -16,3 +16,5 @@ export const OAUTH_BASE_URL = process.env.OAUTH_BASE_URL;
 export const OAUTH_AUTHORIZATION_CODE = process.env.OAUTH_AUTHORIZATION_CODE;
 export const VIMEO_ACCESS_TOKEN = process.env.VIMEO_ACCESS_TOKEN;
 export const VIMEO_BASE_URL = process.env.VIMEO_BASE_URL;
+export const SUPABASE_URL = process.env.SUPABASE_URL;
+export const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
