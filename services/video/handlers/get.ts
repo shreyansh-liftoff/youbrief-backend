@@ -38,6 +38,7 @@ export const getVideos = async (req: Request, res: Response) => {
       skip: offset,
       take: limit,
       orderBy: {
+        'createdAt': "desc",
         [orderBy as string]: order,
       },
     });
