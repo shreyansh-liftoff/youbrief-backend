@@ -27,6 +27,7 @@ WORKDIR /app
 
 # Copy package files and env
 COPY package*.json ./
+COPY package-lock.json ./
 COPY .env ./
 RUN npm ci --only=production
 RUN npm install dotenv
@@ -42,4 +43,4 @@ COPY --from=builder /app/dist ./dist
 EXPOSE ${PORT:-4000}
 
 # Start the application with environment variables
-CMD ["sh", "-c", "source .env && npm run dev"]
+CMD ["node", "dist/index.js"]

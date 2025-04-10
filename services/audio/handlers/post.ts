@@ -38,7 +38,7 @@ export const createAudioUrl = async (req: Request, res: Response) => {
     await ensureTmpDirectory();
     const audioFile = await generateAudioFromSummary(
       summary.text,
-      existingAudio.id!,
+      id,
       language as string
     );
     if (!audioFile) {
