@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { ApifyClient } from "apify-client";
 import { APIFY_API_TOEKN } from "../config/env";
 import { CACHE_KEYS, CACHE_TTL, redis } from "../redis/cofig";
+import { getVideoSubtitles } from "../services/apify/apify";
 
 const prisma = new PrismaClient();
 
@@ -23,10 +24,31 @@ export async function refereshTrendingVideos() {
         const run = await apifyClient.actor("jnHyoAspdnYdE42rn").call(input);
 
         const { items } = await apifyClient.dataset(run.defaultDatasetId).listItems();
+
+        // Filter videos with English transcripts
+        const videosWithTranscripts = await Promise.allSettled(
+            items.map(async (video: any) => {
+                try {
+                    const hasTranscript = await getVideoSubtitles(video.id);
+                    return hasTranscript ? video : null;
+                } catch (error) {
+                    console.log(`❌ No transcript for video ${video.id}`);
+                    return null;
+                }
+            })
+        );
         
-        // Process each trending video
+        const validVideos = videosWithTranscripts
+            .filter(result => 
+                result.status === 'fulfilled' && result.value !== null
+            )
+            .map(result => (result as PromiseFulfilledResult<any>).value);
+
+        console.log(`📊 Found ${validVideos.length} videos with transcripts`);
+
+        // Process filtered videos
         const createdVideos = await Promise.allSettled(
-            items.map((video: any) => {
+            validVideos.map((video: any) => {
                 return prisma.video.upsert({
                     where: { url: video.url },
                     update: {},
@@ -35,7 +57,7 @@ export async function refereshTrendingVideos() {
                         url: video.url,
                         title: video.title,
                         description: video.description ?? '',
-                        thumbnail: video.thumbnails?.[0]?.url
+                        thumbnail: video.thumbnailUrl,
                     }
                 });
             })

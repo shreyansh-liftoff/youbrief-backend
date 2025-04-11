@@ -10,6 +10,7 @@ import {
 import { VideoDTO } from "./schema";
 import { YoutubeTranscript } from "youtube-transcript";
 import nodeFetch from "node-fetch";
+import { getVideoSubtitles } from "../apify/apify";
 
 const youtubeClient = axios.create({
   baseURL: YOUTUBE_BASE_URL,
@@ -75,14 +76,44 @@ export const getVideosByCategoryId = async (categoryId: string) => {
       },
     });
 
-    const parsedResponse = response.data.items.map((item: any) => ({
+    // Check for transcripts availability
+    const videosWithTranscripts = await Promise.allSettled(
+      response.data.items.map(async (item: any) => {
+        try {
+          const hasTranscript = await getVideoSubtitles(item.id);
+          if (hasTranscript) {
+            return {
+              id: item.id,
+              url: `https://www.youtube.com/watch?v=${item.id}`,
+              title: item.snippet.title,
+              text: item.snippet.description || "",
+              thumbnailUrl:
+                item.snippet.thumbnails.standard?.url ||
+                item.snippet.thumbnails.default.url,
+            };
+          }
+          return null;
+        } catch (error) {
+          console.log(`❌ No transcript for video ${item.id}`);
+          return null;
+        }
+      })
+    );
+
+    const validVideos = videosWithTranscripts
+      .filter(result => 
+        result.status === 'fulfilled' && result.value !== null
+      )
+      .map(result => (result as PromiseFulfilledResult<any>).value);
+
+    console.log(`✅ Found ${validVideos.length} videos with transcripts`);
+
+    const parsedResponse = validVideos.map((item: any) => ({
       id: item.id,
       url: `https://www.youtube.com/watch?v=${item.id}`,
-      title: item.snippet.title,
-      text: item.snippet.description || "",
-      thumbnailUrl:
-        item.snippet.thumbnails.standard?.url ||
-        item.snippet.thumbnails.default.url,
+      title: item.title,
+      text: item.text || "",
+      thumbnailUrl: item.thumbnailUrl
     }));
 
     return parsedResponse;

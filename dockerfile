@@ -43,4 +43,4 @@ COPY --from=builder /app/dist ./dist
 EXPOSE ${PORT:-4000}
 
 # Start the application with environment variables
-CMD ["node", "dist/index.js"]
+CMD ["npm", "run", "dev"]
