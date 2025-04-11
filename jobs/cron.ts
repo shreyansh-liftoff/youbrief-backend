@@ -57,7 +57,7 @@ export async function refereshTrendingVideos() {
                         url: video.url,
                         title: video.title,
                         description: video.description ?? '',
-                        thumbnail: video.thumbnailUrl,
+                        thumbnail: video.thumbnails?.[0]?.url
                     }
                 });
             })
